@@ -418,10 +418,6 @@
       buffer = await audioContext.decodeAudioData(reader.result);
       await renderSpectrogram();
 
-      if (fullsizeA.href) URL.revokeObjectURL(fullsizeA.href);
-      const canvasBlob = await new Promise((resolve) => canvas.toBlob(resolve));
-      fullsizeA.href = URL.createObjectURL(canvasBlob);
-
       // idiot protection off
       fileInput.disabled = false;
     };
@@ -496,6 +492,10 @@
       imageData.data.set(buf8);
       canvasContext.putImageData(imageData, 0, 0);
       await renderingPromise;
+
+      if (fullsizeA.href) URL.revokeObjectURL(fullsizeA.href);
+      const canvasBlob = await new Promise((resolve) => canvas.toBlob(resolve));
+      fullsizeA.href = URL.createObjectURL(canvasBlob);
     };
 
     fileInput.addEventListener("change", openFile);
@@ -505,6 +505,5 @@
     sppInput.addEventListener("change", renderSpectrogram);
 
     renderButton.addEventListener("click", renderSpectrogram);
-    fullsizeButton.addEventListener("click", openFullsize);
   </script>
 </html>
