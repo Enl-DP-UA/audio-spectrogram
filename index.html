@@ -88,7 +88,7 @@
       <input type="file" id="file" accept="audio/*" onchange="openFile" />
       <fieldset>
         <legend>General</legend>
-        <label for="spp">Seconds per pixel</label>
+        <label for="spp" class="with-tooltip" title="0.003...1: Time (horizontal) resolution.">Seconds per pixel</label>
         <input
           type="number"
           id="spp"
@@ -96,8 +96,6 @@
           max="1"
           step="0.005"
           value="0.01"
-          class="with-tooltip"
-          title="0.003...1: Time (horizontal) resolution."
         />
         <br>
         <label
