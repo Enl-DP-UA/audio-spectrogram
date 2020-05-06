@@ -19,13 +19,41 @@
         height: 100vh;
         grid-template:
           "spectrogram" 1fr
-          /* "seek" max-content */
           "settings" max-content
+          "credits" max-content
           / 1fr;
       }
-      .seek,
+      .player {
+        overflow-x: scroll;
+        overflow-y: hidden;
+      }
+
+      ::-webkit-scrollbar {
+        -webkit-appearance: none;
+      }
+      ::-webkit-scrollbar:vertical {
+        width: 12px;
+      }
+      ::-webkit-scrollbar:horizontal {
+        height: 12px;
+      }
+      ::-webkit-scrollbar-thumb {
+        background-color: rgba(0, 0, 0, .5);
+        border-radius: 10px;
+        border: 2px solid #ffffff;
+      }
+      ::-webkit-scrollbar-track {
+        border-radius: 10px;
+        background-color: #ffffff;
+      }
+
       .controls {
         padding: 1rem;
+        display: flex;
+        flex-wrap: wrap;
+      }
+      .controls > * {
+        flex-shrink: 0;
       }
       .with-tooltip {
         cursor: help;
@@ -33,96 +61,133 @@
       #canvas {
         max-height: 100%;
         width: fit-content;
-        overflow-y: scroll;
       }
       #seek {
         width: 100%;
       }
+      fieldset {
+        padding: 1rem;
+      }
       .love {
         font-size: 0.7rem;
         text-align: center;
+      }
+      @media (prefers-color-scheme: dark){
+        * {
+          color: white;
+          background: black;
+        }
       }
     </style>
   </head>
   <body>
     <section class="player">
       <canvas id="canvas"></canvas>
-      <div id="position"></div>
     </section>
-    <!-- <section class="seek"><input type="range" id="seek" /></section> -->
     <section class="controls">
       <input type="file" id="file" accept="audio/*" onchange="openFile" />
-      <label for="spp" title="Bigger value should decrease noise"
-        >Seconds per pixel</label
-      >
-      <input
-        type="number"
-        id="spp"
-        min="0.003"
-        max="1"
-        step="0.005"
-        value="0.01"
-      />
-      <label
-        for="fftsize"
-        class="with-tooltip"
-        title="Amount of pixels vertically X2. Example: requested detalization vertically is 2048 pixels, then you need to set 4096 here"
-        >FFT size</label
-      >
-      <select id="fftsize">
-        <option>32768</option>
-        <option>16384</option>
-        <option>8192</option>
-        <option>4096</option>
-        <option selected>2048</option>
-        <option>1024</option>
-        <option>512</option>
-        <option>256</option>
-        <option>128</option>
-        <option>64</option>
-        <option>32</option>
-      </select>
-      <label
-        for="mindecibels"
-        class="with-tooltip"
-        title="Bigger value should decrease noise"
-        >Minimum decibels</label
-      >
-      <input
-        type="number"
-        id="mindecibels"
-        min="-100"
-        max="0"
-        step="1"
-        value="-100"
-      />
-      <label
-        for="maxdecibels"
-        class="with-tooltip"
-        title="Smaller value should make silent parts more obvious"
-        >Maximum decibels</label
-      >
-      <input
-        type="number"
-        id="maxdecibels"
-        min="-100"
-        max="0"
-        step="1"
-        value="-30"
-      />
-      <button id="render" class="with-tooltip" title="Usually automatic">
-        Render
-      </button>
-      <a
-        id="fullsize"
-        class="with-tooltip"
-        title="Useful for high FFT (to view in full detail)"
-        target="_blank"
-        >Full size image</a
-      >
-      <hr />
+      <fieldset>
+        <legend>General</legend>
+        <label for="spp">Seconds per pixel</label>
+        <input
+          type="number"
+          id="spp"
+          min="0.003"
+          max="1"
+          step="0.005"
+          value="0.01"
+          class="with-tooltip"
+          title="0.003...1: Time (horizontal) resolution."
+        />
+        <br>
+        <label
+          for="fftsize"
+          class="with-tooltip"
+          title="Amount of pixels vertically X2. Example: requested detalization vertically is 2048 pixels, then you need to set 4096 here"
+          >FFT size</label
+        >
+        <select id="fftsize">
+          <option>32768</option>
+          <option>16384</option>
+          <option>8192</option>
+          <option>4096</option>
+          <option selected>2048</option>
+          <option>1024</option>
+          <option>512</option>
+          <option>256</option>
+          <option>128</option>
+          <option>64</option>
+          <option>32</option>
+        </select>
+      </fieldset>
+      <fieldset>
+        <legend>Loundness bounds</legend>
+          <label
+          for="mindecibels"
+          class="with-tooltip"
+          title="-100...0: Bigger value cuts off silent sounds. Helps to remove noise and add contrast."
+          >Minimum decibels</label
+        >
+        <input
+          type="number"
+          id="mindecibels"
+          min="-100"
+          max="0"
+          step="1"
+          value="-100"
+        />
+        <br>
+        <label
+          for="maxdecibels"
+          class="with-tooltip"
+          title="-100...0: Smaller value should make silent parts more obvious."
+          >Maximum decibels</label
+        >
+        <input
+          type="number"
+          id="maxdecibels"
+          min="-100"
+          max="0"
+          step="1"
+          value="-30"
+        />
+      </fieldset>
+      <fieldset>
+        <legend>Large files</legend>
+        <label
+          for="startsecond"
+          class="with-tooltip"
+          title="[0...duration-1] Start render from this moment"
+          >Start from second</label
+        >
+        <input id="startsecond" type="number" value="0" step="1" min="0"></input>
+        <br>
+        <label
+          for="timewindowsize"
+          class="with-tooltip"
+          title="Render this much seconds from starting second"
+          >Window size (seconds)</label
+        >
+        <input id="timewindowsize" type="number" step="1" value="10" min="1" max="20"></input>
+      </fieldset>
+      <fieldset>
+        <legend>Misc</legend>
+        <button id="render" class="with-tooltip" title="Usually automatic">
+          Render
+        </button>
+        <br>
+        <a
+          id="fullsize"
+          class="with-tooltip"
+          title="Useful for high FFT (to view in full detail)"
+          target="_blank"
+          >Open full size image</a
+        >
+      </fieldset>      
+    </section>
+    <section class="credits">
       <p class="love">
-        Made with ❤️ by Enlightened Dnipro (Ukraine) community (<a
+        Made with 💚 by Enlightened Dnipro (Ukraine) community (<a
           href="https://github.com/Enl-DP-UA/audio-spectrogram"
           >GitHub</a
         >)
@@ -394,6 +459,8 @@
     const minDecibelsInput = $("mindecibels");
     const maxDecibelsInput = $("maxdecibels");
     const sppInput = $("spp");
+    const startSecondInput = $("startsecond");
+    const timeWindowSizeInput = $("timewindowsize");
     const renderButton = $("render");
     const fullsizeA = $("fullsize");
     const canvas = $("canvas");
@@ -409,24 +476,43 @@
       // idiot protection on
       fileInput.disabled = true;
 
-      const reader = new window.FileReader();
-      await new Promise((resolve) => {
-        reader.onload = resolve;
-        reader.readAsArrayBuffer(e.target.files[0]);
-      });
+      const audioElement = document.createElement('audio');
+      audioElement.src = URL.createObjectURL(fileInput.files[0]);
+      await new Promise(resolve => { audioElement.onloadedmetadata = resolve })
 
-      buffer = await audioContext.decodeAudioData(reader.result);
+      const reader = new window.FileReader();
+      reader.readAsArrayBuffer(e.target.files[0]);
+      await new Promise((resolve) => { reader.onload = resolve });
+
+      const bufferPromise = audioContext.decodeAudioData(reader.result);
+      if (audioElement.duration > 10) {
+        alert("The audio is longer than 10 seconds. By default only first 10 seconds are rendered! Use time window functionality to render spectrogram of only the part you want, instead of whole file. Also, it will probably take a few moments to decode the file (but only once until you open something else!)")
+      }
+      startSecondInput.max = audioElement.duration - 1;
+
+      buffer = await bufferPromise;
       await renderSpectrogram();
 
       // idiot protection off
       fileInput.disabled = false;
     };
 
+    function* generateSuspendSeconds(startAt, secondsPerPixel, windowSize, audioLength) {
+      let currentMoment = startAt + secondsPerPixel;
+      do {
+        yield currentMoment;
+        currentMoment += secondsPerPixel;
+        // audiocontext.suspend seems to hang if we suspend very close to the edge, so lets add some margin
+      } while (currentMoment < Math.min(audioLength, startAt + windowSize) - 0.003);
+    }
+
     const renderSpectrogram = async () => {
       const fftSize = +fftsizeSelect.options[fftsizeSelect.selectedIndex].value;
       const minDecibels = +minDecibelsInput.value;
       const maxDecibels = +maxDecibelsInput.value;
-      const spp = +sppInput.value;
+      const secondsPerPixel = +sppInput.value;
+      const startSecond = +startSecondInput.value
+      const windowSize = +timeWindowSizeInput.value
 
       const offlineContext = new OfflineAudioContext(
         2,
@@ -448,14 +534,12 @@
       analyser.connect(offlineContext.destination);
       source.start();
 
-      const canvasWidth = (canvas.width = Math.floor(buffer.duration / spp));
+      const suspendSeconds = Array.from(generateSuspendSeconds(startSecond, secondsPerPixel, windowSize, buffer.duration));
+
+      const canvasWidth = canvas.width = suspendSeconds.length;
       const canvasHeight = (canvas.height = analyser.frequencyBinCount);
 
-      const suspendTimes = Array.from(
-        { length: canvasWidth },
-        (value, index) => spp * index
-      );
-      const frequencySlicesByTimePromises = suspendTimes.map(async (time) => {
+      const frequencySlicesByTimePromises = suspendSeconds.map(async (time) => {
         await offlineContext.suspend(time);
         const frequencyData = new Uint8Array(analyser.frequencyBinCount);
         analyser.getByteFrequencyData(frequencyData);
@@ -466,10 +550,9 @@
       const frequencySlicesByTime = await Promise.all(
         frequencySlicesByTimePromises
       );
+      await renderingPromise;
 
-      const imageData = canvasContext.getImageData(
-        0,
-        0,
+      const imageData = new ImageData(
         canvasWidth,
         canvasHeight
       );
@@ -491,7 +574,6 @@
 
       imageData.data.set(buf8);
       canvasContext.putImageData(imageData, 0, 0);
-      await renderingPromise;
 
       if (fullsizeA.href) URL.revokeObjectURL(fullsizeA.href);
       const canvasBlob = await new Promise((resolve) => canvas.toBlob(resolve));
@@ -503,6 +585,8 @@
     minDecibelsInput.addEventListener("change", renderSpectrogram);
     maxDecibelsInput.addEventListener("change", renderSpectrogram);
     sppInput.addEventListener("change", renderSpectrogram);
+    startSecondInput.addEventListener("change", renderSpectrogram);
+    timeWindowSizeInput.addEventListener("change", renderSpectrogram);
 
     renderButton.addEventListener("click", renderSpectrogram);
   </script>
